@@ -7,6 +7,9 @@ from enum import Enum
 import os
 import sys
 
+class UserOption(Enum):
+	INVESTMENT = 1
+
 class TransactionType(Enum):
 	BUY = 1
 	SELL = 2
@@ -124,11 +127,11 @@ def GetSchemeIndex(inSchemeCode, ioFolio):
 	return len(ioFolio.fSchemes) - 1
 
 #
-def ParseTransactionDate(inTransactionDateStr):
+def ParseDate(inDateStr, src):
 	try:
-		dateObject = datetime.datetime.strptime(inTransactionDateStr, '%d-%b-%Y')
+		dateObject = datetime.datetime.strptime(inDateStr, '%d-%b-%Y')
 	except Exception:
-		Err('Error: Unable to parse date from csv \'' + inTransactionDateStr + '\'. Required format dd-mmm-yyyy')
+		Err('Error: Unable to parse date from ' + src + ' \'' + inTransactionDateStr + '\'. Required format dd-mmm-yyyy')
 	return dateObject
 
 #
@@ -151,7 +154,7 @@ def PrepareTransaction(inCsvEntry):
 	price = inCsvEntry[12]
 
 	transaction = Transaction()
-	transaction.tDate = ParseTransactionDate(transactionDate)
+	transaction.tDate = ParseDate(transactionDate, 'csv')
 	transaction.tType = ParseTransactionType(transactionType)
 	if transaction.tType != TransactionType.OTHER:
 		transaction.tUnits = float(units)
@@ -242,18 +245,22 @@ def PrepareMutualFundData():
 	return folios
 
 #
-def Summarise(inFolios):
+def PrintInvestmentInRange(inFolios, startDate, endDate):
 	fundInvestmentMap = {}
 	for folio in inFolios:
 		if folio.fAMCName not in fundInvestmentMap:
 			fundInvestmentMap[folio.fAMCName] = 0
 		for scheme in folio.fSchemes:
 			schemeTotal = 0
-			for holding in scheme.sHoldings:
-				schemeTotal += holding.hRemainingUnits*holding.hPrice
+			for transaction in scheme.sTransactions:
+				if (transaction.tType == TransactionType.BUY and
+					transaction.tDate >= startDate and
+					transaction.tDate <= endDate):
+					schemeTotal += transaction.tAmount
 			
 			fundInvestmentMap[folio.fAMCName] += schemeTotal
-			print(scheme.sName + '\t' + Currency(schemeTotal))
+			if schemeTotal > 0:
+				print(scheme.sName + '\t' + Currency(schemeTotal))
 		print('-'*100)
 
 	total = 0
@@ -267,12 +274,39 @@ def Summarise(inFolios):
 	print('-'*100)
 
 #
-def main():
-	#print('Usage \'python3 consolidate-mf.py ITR.json FA-A3.csv\'')
+def ParseStartAndEndDate(inDateRangeStr):
+	dates = inDateRangeStr.split(':')
+	if len(dates) != 2:
+		Err('Error: Incorrect range provided \''+inDateRangeStr+'\'. Sample format \'01-dec-2023:31-dec-2023\'')
 
+	startDate = ParseDate(dates[0], 'command args')
+	endDate = ParseDate(dates[1], 'command args')
+
+	if startDate > endDate:
+		Err('Error: start date \'' + dates[0] + '\' should be earlier than end date \'' + dates[1] + '\'')
+
+	return (startDate, endDate)
+
+#
+def HandleUserInput(inFolios):
+	givenOption = UserOption.INVESTMENT
+	givenRangeStr = ''
+
+	if len(sys.argv) >= 3:
+		userInput = sys.argv[2]
+		if userInput.startswith('-i='):
+			givenOption = UserOption.INVESTMENT
+			givenRangeStr = userInput[3:]
+
+	if givenOption == UserOption.INVESTMENT:
+		startDate, endDate = ParseStartAndEndDate(givenRangeStr)
+		PrintInvestmentInRange(inFolios, startDate, endDate)
+
+#
+def main():
 	folios = PrepareMutualFundData()
 
-	Summarise(folios)
+	HandleUserInput(folios)
 
 
 if __name__ == "__main__":
