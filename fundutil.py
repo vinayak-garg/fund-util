@@ -129,7 +129,7 @@ def GetSchemeIndex(inSchemeCode, ioFolio):
 #
 def ParseDate(inDateStr, src):
 	try:
-		dateObject = datetime.datetime.strptime(inDateStr, '%d-%b-%Y')
+		dateObject = datetime.datetime.strptime(inDateStr, '%d-%b-%Y').date()
 	except Exception:
 		Err('Error: Unable to parse date from ' + src + ' \'' + inTransactionDateStr + '\'. Required format dd-mmm-yyyy')
 	return dateObject
@@ -279,8 +279,15 @@ def ParseStartAndEndDate(inDateRangeStr):
 	if len(dates) != 2:
 		Err('Error: Incorrect range provided \''+inDateRangeStr+'\'. Sample format \'01-dec-2023:31-dec-2023\'')
 
-	startDate = ParseDate(dates[0], 'command args')
-	endDate = ParseDate(dates[1], 'command args')
+	if dates[0] == '':
+		startDate = datetime.date(2000, 1, 1)
+	else:
+		startDate = ParseDate(dates[0], 'command args')
+
+	if dates[1] == '':
+		endDate = datetime.date.today()
+	else:
+		endDate = ParseDate(dates[1], 'command args')
 
 	if startDate > endDate:
 		Err('Error: start date \'' + dates[0] + '\' should be earlier than end date \'' + dates[1] + '\'')
@@ -290,7 +297,7 @@ def ParseStartAndEndDate(inDateRangeStr):
 #
 def HandleUserInput(inFolios):
 	givenOption = UserOption.INVESTMENT
-	givenRangeStr = ''
+	givenRangeStr = ':'
 
 	if len(sys.argv) >= 3:
 		userInput = sys.argv[2]
