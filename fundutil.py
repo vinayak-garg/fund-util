@@ -205,7 +205,6 @@ def SortTransactions(inFolios):
 def PrepareHoldings(inFolios):
 	for folio in inFolios:
 		for scheme in folio.fSchemes:
-			#remainingHoldingStartIndex = 0
 			for transaction in scheme.sTransactions:
 				if transaction.tType == TransactionType.BUY:
 					scheme.sHoldings.append(Holding(transaction))
@@ -232,7 +231,7 @@ def PrepareMutualFundData():
 	csvPaths = GetCSVFilePaths()
 
 	if len(csvPaths) == 0:
-		Err('Error: did not find any .csv file in current directory')
+		Err('Error: did not find any .csv file in working directory')
 
 	for csvPath in csvPaths:
 		ParseCSVFile(csvPath, folios)
