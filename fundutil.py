@@ -161,6 +161,10 @@ def PrepareTransaction(inCsvEntry):
 		transaction.tPrice = float(price)
 		transaction.tAmount = float(amount)
 
+		# TODO: verify the starting date of the STT getting included in amount
+		if transaction.tDate >= datetime.date(2022, 1, 1):
+			transaction.tAmount *= 1.00005	# include STT in amount to round off the amount
+
 	return transaction
 
 
