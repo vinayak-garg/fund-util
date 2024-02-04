@@ -246,10 +246,15 @@ def PrepareMutualFundData():
 
 #
 def PrintInvestmentInRange(inFolios, startDate, endDate):
+	
+	print('Fund wise summary of invested amount - ')
+	print('-'*100)
+
 	fundInvestmentMap = {}
 	for folio in inFolios:
 		if folio.fAMCName not in fundInvestmentMap:
 			fundInvestmentMap[folio.fAMCName] = 0
+		entryCount = 0
 		for scheme in folio.fSchemes:
 			schemeTotal = 0
 			for transaction in scheme.sTransactions:
@@ -261,8 +266,14 @@ def PrintInvestmentInRange(inFolios, startDate, endDate):
 			fundInvestmentMap[folio.fAMCName] += schemeTotal
 			if schemeTotal > 0:
 				print(scheme.sName + '\t' + Currency(schemeTotal))
-		print('-'*100)
+				entryCount += 1
 
+		if entryCount > 0:
+			print('-'*100)
+
+	print()
+	print('AMC wise aggregated summary of invested amount - ')
+	print('-'*100)
 	total = 0
 	for key in fundInvestmentMap:
 		val = fundInvestmentMap[key]
